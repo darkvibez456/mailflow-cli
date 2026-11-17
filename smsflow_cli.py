@@ -40,6 +40,7 @@ def banner() -> None:
             border_style="blue",
         )
     )
+    console.print("[bold magenta]Developer:[/bold magenta] [white]darkvibez[/white]")
     console.print("[dim]One message • E.164 validation • provider-controlled delivery[/dim]\n")
 
 

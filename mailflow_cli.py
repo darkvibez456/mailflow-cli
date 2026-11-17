@@ -44,6 +44,7 @@ def banner() -> None:
             border_style="green",
         )
     )
+    console.print("[bold magenta]Developer:[/bold magenta] [white]darkvibez[/white]")
     console.print("[dim]One request • clear validation • timeout-safe delivery[/dim]\n")
 
 
