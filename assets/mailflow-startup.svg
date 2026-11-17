@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">MailFlow CLI startup preview</title>
+  <desc id="desc">A terminal-style preview showing the MailFlow CLI Mail startup panel and status flow.</desc>
+  <defs>
+    <linearGradient id="window" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#191526"/><stop offset="1" stop-color="#0b0a12"/></linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="18"/></filter>
+  </defs>
+  <rect width="1200" height="700" rx="22" fill="#050509"/>
+  <circle cx="1030" cy="180" r="220" fill="#7c3aed" opacity=".16" filter="url(#blur)"/>
+  <rect x="38" y="38" width="1124" height="624" rx="15" fill="url(#window)" stroke="#4c3a70" stroke-width="2"/>
+  <rect x="38" y="38" width="1124" height="54" rx="15" fill="#241d35"/>
+  <circle cx="72" cy="65" r="8" fill="#fb7185"/><circle cx="98" cy="65" r="8" fill="#fbbf24"/><circle cx="124" cy="65" r="8" fill="#34d399"/>
+  <text x="170" y="72" fill="#c4b5fd" font-family="monospace" font-size="20">mailflow-cli — terminal</text>
+  <text x="90" y="160" fill="#f0abfc" font-family="monospace" font-size="44" font-weight="bold">MAILFLOW CLI</text>
+  <text x="92" y="198" fill="#a78bfa" font-family="monospace" font-size="18">AUTHORIZED EMAIL TESTING TOOL</text>
+  <line x1="90" y1="230" x2="1100" y2="230" stroke="#4c3a70"/>
+  <text x="90" y="278" fill="#d8b4fe" font-family="monospace" font-size="20">[Responsible use]</text>
+  <text x="90" y="316" fill="#ddd6fe" font-family="monospace" font-size="18">Use only with an authorized API and consented recipients.</text>
+  <text x="90" y="374" fill="#67e8f9" font-family="monospace" font-size="20">Destination Email :</text><text x="390" y="374" fill="#f5f3ff" font-family="monospace" font-size="20">demo@example.com</text>
+  <text x="90" y="416" fill="#67e8f9" font-family="monospace" font-size="20">Sender Name      :</text><text x="390" y="416" fill="#f5f3ff" font-family="monospace" font-size="20">MailFlow CLI</text>
+  <text x="90" y="458" fill="#67e8f9" font-family="monospace" font-size="20">Subject          :</text><text x="390" y="458" fill="#f5f3ff" font-family="monospace" font-size="20">Test message</text>
+  <text x="90" y="520" fill="#facc15" font-family="monospace" font-size="20">Submitting mail request...</text>
+  <rect x="90" y="550" width="700" height="58" rx="8" fill="#171323" stroke="#7c3aed"/>
+  <text x="112" y="587" fill="#86efac" font-family="monospace" font-size="19">STATUS PANEL  •  HTTP 2xx accepted by server</text>
+</svg>

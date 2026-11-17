@@ -1,0 +1,6 @@
+# MailFlow CLI runtime dependencies
+# Install with: python -m pip install -r requirements.txt
+colorama>=0.4.6,<1
+pyfiglet>=1.0.2,<2
+requests>=2.31.0,<3
+rich>=13.7.0,<15
