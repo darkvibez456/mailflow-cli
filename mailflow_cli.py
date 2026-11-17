@@ -17,6 +17,7 @@ from colorama import init
 from requests import Response
 from rich.console import Console
 from rich.panel import Panel
+from rich.table import Table
 from rich.text import Text
 
 # ---------------------------------------------------------------------------
@@ -26,10 +27,10 @@ DEFAULT_API_URL: Final = "https://api.proxynova.com/v1/send_email"
 API_URL = os.getenv("MAILFLOW_API_URL", DEFAULT_API_URL).strip()
 REQUEST_TIMEOUT = float(os.getenv("MAILFLOW_TIMEOUT", "15"))
 MAX_MESSAGE_LENGTH = 10_000
+MAX_SUBJECT_LENGTH = 200
 
 init(autoreset=True)
 console = Console()
-
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$")
 
 
@@ -43,6 +44,7 @@ def banner() -> None:
             border_style="green",
         )
     )
+    console.print("[dim]One request • clear validation • timeout-safe delivery[/dim]\n")
 
 
 def loading(text: str, dots: int = 3, delay: float = 0.12) -> None:
@@ -54,13 +56,13 @@ def loading(text: str, dots: int = 3, delay: float = 0.12) -> None:
     console.print()
 
 
-def prompt_required(label: str, *, secret: bool = False) -> str:
+def prompt_required(label: str) -> str:
     """Read a non-empty value from the user."""
     while True:
         value = console.input(f"[cyan bold]{label}[/cyan bold]").strip()
         if value:
             return value
-        console.print("[red]This field cannot be empty.[/red]")
+        console.print("[bold red]✗[/bold red] This field cannot be empty.")
 
 
 def prompt_email() -> str:
@@ -69,7 +71,19 @@ def prompt_email() -> str:
         address = prompt_required("Destination Email : ")
         if EMAIL_PATTERN.fullmatch(address):
             return address
-        console.print("[red]Please enter a valid email address.[/red]")
+        console.print("[bold red]✗[/bold red] Please enter a valid email address.")
+
+
+def prompt_subject() -> str:
+    """Read a subject and keep it within a practical API limit."""
+    while True:
+        subject = prompt_required("Subject          : ")
+        if len(subject) <= MAX_SUBJECT_LENGTH:
+            return subject
+        console.print(
+            f"[bold red]✗[/bold red] Subject is too long. "
+            f"Maximum: {MAX_SUBJECT_LENGTH} characters."
+        )
 
 
 def prompt_message() -> str:
@@ -79,8 +93,29 @@ def prompt_message() -> str:
         if len(message) <= MAX_MESSAGE_LENGTH:
             return message
         console.print(
-            f"[red]Message is too long. Maximum: {MAX_MESSAGE_LENGTH} characters.[/red]"
+            f"[bold red]✗[/bold red] Message is too long. "
+            f"Maximum: {MAX_MESSAGE_LENGTH} characters."
         )
+
+
+def mask_email(address: str) -> str:
+    """Hide most of the local part when echoing a destination on screen."""
+    local, domain = address.split("@", 1)
+    visible = local[:2] if len(local) > 2 else local[:1]
+    return f"{visible}{'*' * max(2, len(local) - len(visible))}@{domain}"
+
+
+def request_preview(to: str, sender_name: str, subject: str, message: str) -> None:
+    """Show a compact summary before making the network request."""
+    table = Table(show_header=False, box=None, padding=(0, 1))
+    table.add_column(style="cyan bold", no_wrap=True)
+    table.add_column(style="white")
+    table.add_row("Destination", mask_email(to))
+    table.add_row("Sender", sender_name)
+    table.add_row("Subject", subject)
+    table.add_row("Message", f"{len(message)} characters")
+    table.add_row("Endpoint", API_URL)
+    console.print(Panel(table, title="REQUEST PREVIEW", border_style="blue"))
 
 
 def compact_response(response: Response, limit: int = 500) -> str:
@@ -89,6 +124,20 @@ def compact_response(response: Response, limit: int = 500) -> str:
     if len(body) > limit:
         body = f"{body[:limit]}…"
     return body
+
+
+def response_guidance(response: Response) -> str:
+    """Turn common provider failures into an actionable next step."""
+    body = response.text.lower()
+    if response.status_code == 429 or "limit" in body or "rate" in body:
+        return "[yellow]Next step:[/yellow] The provider limit may be reached. Wait and try again later."
+    if response.status_code in {401, 403}:
+        return "[yellow]Next step:[/yellow] Check API authentication and sender permissions."
+    if response.status_code == 400:
+        return "[yellow]Next step:[/yellow] Check the endpoint, required fields, and provider payload format."
+    if response.status_code >= 500:
+        return "[yellow]Next step:[/yellow] The provider returned a server error. Try again later."
+    return "[yellow]Next step:[/yellow] Review the provider response and configuration."
 
 
 def send_mail(to: str, sender_name: str, subject: str, message: str) -> bool:
@@ -106,8 +155,8 @@ def send_mail(to: str, sender_name: str, subject: str, message: str) -> bool:
     }
 
     loading("Submitting mail request")
+    started = time.perf_counter()
     try:
-        # A timeout is essential: a network call should never hang forever.
         response = requests.post(
             API_URL,
             data=payload,
@@ -117,8 +166,8 @@ def send_mail(to: str, sender_name: str, subject: str, message: str) -> bool:
     except requests.exceptions.Timeout:
         console.print(
             Panel.fit(
-                "The mail service took too long to respond. "
-                "Please check the API or try again later.",
+                "The mail service took too long to respond.\n"
+                "Check the API or try again later.",
                 title="TIMEOUT",
                 border_style="red",
             )
@@ -134,15 +183,19 @@ def send_mail(to: str, sender_name: str, subject: str, message: str) -> bool:
         )
         return False
 
+    elapsed = time.perf_counter() - started
     success = 200 <= response.status_code < 300
+    result_label = (
+        "[bold green]✓ Request accepted by the server.[/bold green]"
+        if success
+        else "[bold red]✗ The server rejected the request.[/bold red]"
+    )
     status = (
-        f"[cyan]HTTP status:[/cyan] [white]{response.status_code}[/white]\n"
+        f"[cyan]HTTP status :[/cyan] [white]{response.status_code}[/white]\n"
+        f"[cyan]Duration    :[/cyan] [white]{elapsed:.2f}s[/white]\n"
         f"[cyan]Server reply:[/cyan] [white]{compact_response(response)}[/white]\n\n"
-        + (
-            "[bold green]Request accepted by the server.[/bold green]"
-            if success
-            else "[bold red]The server rejected the request.[/bold red]"
-        )
+        f"{result_label}\n"
+        f"{response_guidance(response)}"
     )
     console.print(
         Panel.fit(
@@ -169,18 +222,22 @@ def main() -> int:
     try:
         to = prompt_email()
         sender_name = prompt_required("Sender Name      : ")
-        subject = prompt_required("Subject          : ")
+        subject = prompt_subject()
         message = prompt_message()
 
         console.print()
-        send_mail(to, sender_name, subject, message)
+        request_preview(to, sender_name, subject, message)
+        console.print()
+        sent = send_mail(to, sender_name, subject, message)
         console.print(
             Panel.fit(
-                "[bold yellow]MailFlow CLI • educational build[/bold yellow]",
-                border_style="blue",
+                "[bold green]MailFlow CLI finished successfully[/bold green]"
+                if sent
+                else "[bold yellow]MailFlow CLI finished with a failed request[/bold yellow]",
+                border_style="green" if sent else "yellow",
             )
         )
-        return 0
+        return 0 if sent else 1
     except KeyboardInterrupt:
         console.print("\n[bold red]Cancelled by user.[/bold red]")
         return 130

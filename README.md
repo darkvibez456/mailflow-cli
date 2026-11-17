@@ -277,7 +277,62 @@ $env:MAILFLOW_TIMEOUT = "30"
 
 ### HTTP 4xx or 5xx
 
-Read the server reply in the status panel. Common causes include an invalid endpoint, provider authentication requirements, an invalid sender identity, or a rejected request format.
+Read the server reply and the `Next step` line in the status panel. Common causes include an invalid endpoint, provider authentication requirements, an invalid sender identity, a rejected request format, or a provider quota/rate limit. A message such as `API limit may have been reached` comes from the external provider; wait and try again later or check that provider's dashboard and plan limits.
+
+## Example terminal output
+
+The current interface shows a masked destination and a compact request summary before contacting the API:
+
+```text
+╭──────────────────────── REQUEST PREVIEW ────────────────────────╮
+│ Destination  de****@example.com                                 │
+│ Sender       MailFlow CLI                                       │
+│ Subject      Test message                                      │
+│ Message      42 characters                                      │
+│ Endpoint     https://your-authorized-mail-api.example/...       │
+╰─────────────────────────────────────────────────────────────────╯
+
+Submitting mail request...
+
+╭───────────────────────── STATUS PANEL ─────────────────────────╮
+│ HTTP status : 200                                               │
+│ Duration    : 0.84s                                             │
+│ Server reply: accepted                                          │
+│                                                                  │
+│ ✓ Request accepted by the server.                               │
+╰─────────────────────────────────────────────────────────────────╯
+```
+
+The recipient is partially masked in the preview to reduce accidental exposure in screenshots or terminal recordings. A `2xx` result means the provider accepted the request; it is not a guarantee that the message reached the inbox.
+
+## Status meanings
+
+| Status | Meaning |
+|---|---|
+| `2xx` | The email API accepted the request. |
+| `4xx` | The request or credentials were rejected; inspect the provider reply. |
+| `429` | The provider rate limit or API quota may have been reached; wait before trying again. |
+| `5xx` | The provider returned a server-side failure; try later if appropriate. |
+| Timeout | The API did not respond within `MAILFLOW_TIMEOUT` seconds. |
+| Network error | The endpoint could not be reached or the connection failed. |
+
+## Frequently asked questions
+
+### Does MailFlow CLI send email directly?
+
+No. It submits one request to the API URL configured in `MAILFLOW_API_URL`. The external provider handles authentication, delivery, bounces, and rate limits.
+
+### Does it support bulk email?
+
+No. The interface is intentionally designed for one request at a time and does not include recipient scraping, bulk loops, or automatic POST retries.
+
+### Where should API credentials be stored?
+
+Use the provider's supported authentication mechanism and keep credentials out of source files and Git commits. The repository's `.gitignore` excludes common local `.env` files, but you should still review files before pushing.
+
+### Why is the sender called a display name?
+
+The `from` field in this educational example is passed as the sender value expected by the configured API. Use only a provider-approved sender identity; a display name does not grant permission to impersonate someone else.
 
 ## Project structure
 
@@ -289,6 +344,10 @@ assets/mailflow-banner.svg       Project banner
 assets/mailflow-startup.svg      Terminal startup preview
 assets/mailflow-workflow.svg     Request-flow diagram
 ```
+
+## Credits
+
+Created and maintained by [darkvibez456](https://github.com/darkvibez456). MailFlow CLI is an educational project focused on readable terminal UX and responsible API integration.
 
 ## License and responsible use
 
