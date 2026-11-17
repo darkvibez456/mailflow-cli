@@ -37,6 +37,44 @@ The tool is designed to make a basic email API integration easy to understand. I
 - Termux, Linux, and Windows setup instructions
 - Local SVG banner, startup preview, and workflow diagram for the GitHub page
 
+## SMSFlow CLI: real SMS through an API
+
+The repository also includes `smsflow_cli.py`, a separate one-message SMS client. It uses the Twilio REST API and follows the same design as MailFlow CLI: collect input, validate it, show a preview, submit one request, and display a clear provider status.
+
+Real SMS delivery requires a Twilio account, an account SID, an auth token, and a Twilio-approved sender number. Trial accounts usually require the recipient number to be verified, and provider fees or quotas may apply. The tool cannot send SMS from an arbitrary personal number or bypass carrier/provider rules.
+
+### Configure SMS credentials
+
+Never put credentials directly in the Python file or commit them to GitHub.
+
+#### Linux / Termux
+
+```bash
+export SMSFLOW_ACCOUNT_SID="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+export SMSFLOW_AUTH_TOKEN="your_private_auth_token"
+export SMSFLOW_FROM_NUMBER="+15551234567"
+export SMSFLOW_TIMEOUT="15"
+python smsflow_cli.py
+```
+
+#### Windows PowerShell
+
+```powershell
+$env:SMSFLOW_ACCOUNT_SID = "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+$env:SMSFLOW_AUTH_TOKEN = "your_private_auth_token"
+$env:SMSFLOW_FROM_NUMBER = "+15551234567"
+$env:SMSFLOW_TIMEOUT = "15"
+python .\smsflow_cli.py
+```
+
+The destination and sender must use international E.164 format, such as `+14155552671`. Send only to people who explicitly opted in. The tool intentionally sends one message per run and has no bulk-send loop.
+
+Run the SMS client after configuring the variables:
+
+```bash
+python smsflow_cli.py
+```
+
 ## How does it work?
 
 The program follows a short, predictable flow:
@@ -338,6 +376,7 @@ The `from` field in this educational example is passed as the sender value expec
 
 ```text
 mailflow_cli.py                  Main interactive program
+smsflow_cli.py                   One-message Twilio SMS client
 requirements.txt                 Python dependencies
 README.md                        GitHub documentation
 assets/mailflow-banner.svg       Project banner
